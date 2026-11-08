@@ -1,8 +1,9 @@
 ---
 plan: morning-digest
-status: ready
+status: completed
 owner: rook
 opened: 2026-10-29
+closed: 2026-11-08
 ---
 
 # Morning digest
@@ -77,3 +78,40 @@ page again with `LANE_MARKER` unset (the banner reads "no marker set") and uploa
 link. Move this plan to `docs/plans/done/` with its issue list.
 
 Done when: the preview link no longer shows the lane marker.
+
+## Issues
+
+All issue numbers below refer to `ladamczewski/rig-handover-s01e04`.
+Descriptions follow the source sections of this plan.
+
+| # | Source section | Description |
+|---|----------------|-------------|
+| #1 | 1. Run log reader — contract | Define `DigestRow` and the `readNight(runsDir, night)` signature in `src/digest/types.ts` first, so the reader, views, JSON route and tests share one contract. |
+| #2 | 1. Run log reader — implementation | Read JSONL into one row per job with owner, runs, retries, last status/error and first/last times; count malformed lines, preserve null owners and test the five-job, one-bad-line fixture. |
+| #3 | 2a. Page | Render `GET /digest/:night` in the usual layout, sorted by job, highlighting retries of at least three and failures; handle missing and empty nights. |
+| #4 | 2b. JSON | Serve the same rows in the same order at `GET /api/digest/:night`, keeping the API consistent with the HTML page. |
+| #5 | 2c. Board link | Link each night on disk from the status board to its digest and show its ok / retry / fail counts. |
+| #6 | 2d. Route tests | Test the HTML and JSON routes through `app.request()` for successful, missing, empty and malformed-line nights, using temporary directories without changing `runs/`. |
+| #7 | 3. Preview for review | Export the self-contained digest HTML with the lane banner, publish it at a replaceable public HTTPS URL and send the reviewer that URL with this plan's issue list. |
+| #8 | 4. Clean up | Replace the reviewed page at the same URL with an export made with `LANE_MARKER` unset, then archive this plan with its complete issue list and review/cleanup record. |
+
+## Review and cleanup record
+
+Actual completion date: **2026-11-08** (not the plan's opening date, 2026-10-29).
+The evidence below was supplied by the coordinating worker; this documentation-only
+worker did not publish or modify any preview.
+
+- The course confirmed that the review had been viewed. This records review confirmation,
+  not a claim that the course challenge is solved.
+- Review run: `42517810505`.
+- Clean run: `42519363894`, result: **success**.
+- The same public URL was retained for review and cleanup:
+  `https://ladamczewski.github.io/rig-handover-s01e04/`.
+- The cleaned URL was verified with **HTTP 200**, banner **"no marker set"**,
+  **5 jobs** and **zero scripts**.
+- Removal of the old artifact and issue #7 tracking are handled by the coordinating
+  worker, not by this documentation-only change.
+
+The plan's `completed` status records the delivered work and the verified cleanup.
+It does not assert that issue #8 is already closed: that issue remains pending
+integration and push of this archival commit by the coordinating worker.
