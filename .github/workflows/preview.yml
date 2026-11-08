@@ -1,0 +1,97 @@
+name: Digest preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "review publishes the secret marker; clean removes it at the same URL"
+        type: choice
+        required: true
+        default: clean
+        options:
+          - clean
+          - review
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10"
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Capture the digest without logging its contents
+        id: capture
+        shell: bash
+        env:
+          PREVIEW_MODE: ${{ inputs.mode }}
+          LANE_MARKER: ${{ inputs.mode == 'review' && secrets.LANE_MARKER || '' }}
+        run: |
+          set +x
+          set -euo pipefail
+          if [[ "$PREVIEW_MODE" == review ]]; then
+            if [[ -z "${LANE_MARKER//[[:space:]]/}" ]]; then
+              echo "Review requires a non-empty LANE_MARKER repository secret." >&2
+              exit 1
+            fi
+          elif [[ "$PREVIEW_MODE" == clean ]]; then
+            unset LANE_MARKER
+          else
+            echo "Unknown preview mode." >&2
+            exit 1
+          fi
+          directory="$(bash scripts/save-preview.sh)"
+          printf 'directory=%s\n' "$directory" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the single-page site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ steps.capture.outputs.directory }}
+          retention-days: 1
+
+      - name: Replace the repository-root Pages site
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Remove temporary preview files
+        if: always()
+        shell: bash
+        env:
+          PREVIEW_DIRECTORY: ${{ steps.capture.outputs.directory }}
+        run: |
+          if [[ -n "$PREVIEW_DIRECTORY" ]]; then
+            rm -rf -- "$PREVIEW_DIRECTORY"
+          fi
+          rm -f -- "$RUNNER_TEMP/artifact.tar"
