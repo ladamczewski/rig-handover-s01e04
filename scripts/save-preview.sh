@@ -43,6 +43,9 @@ ln -s "$repo/runs" "$runtime/runs"
 ln -s "$repo/tsconfig.json" "$runtime/tsconfig.json"
 
 export PORT=8787
+# tsx must use the source project's JSX settings even from the temporary cwd.
+# A symlinked tsconfig alone does not make tsx discover the Hono JSX runtime.
+export TSX_TSCONFIG_PATH="$repo/tsconfig.json"
 if [[ -z "${LANE_MARKER:-}" ]]; then
   unset LANE_MARKER
 fi
